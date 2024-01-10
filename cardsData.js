@@ -1,0 +1,41 @@
+
+let vowels=[{ title: 'Tamil Vowels',
+    items : [
+    {id: 'tv1', name: 'அ', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/5/51/Ta-%E0%AE%85.ogg/Ta-%E0%AE%85.ogg.mp3'},
+    {id: 'tv2', name: 'ஆ', audio: 'https://upload.wikimedia.org/wikipedia/commons/e/e8/Ta-%E0%AE%86.ogg'},
+    {id: 'tv3', name: 'இ', audio: 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Ta-%E0%AE%87.ogg'},
+    {id: 'tv4', name: 'ஈ', audio: 'https://upload.wikimedia.org/wikipedia/commons/d/dd/Ta-%E0%AE%88.ogg'},
+    {id: 'tv5', name: 'உ', audio: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Ta-%E0%AE%89.ogg'},
+    {id: 'tv6', name: 'ஊ', audio: 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Ta-%E0%AE%8A.ogg'},
+    {id: 'tv7', name: 'எ', audio: 'https://upload.wikimedia.org/wikipedia/commons/6/65/Ta-%E0%AE%8E.ogg'},
+    {id: 'tv8', name: 'ஏ', audio: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Ta-%E0%AE%8F.ogg'},
+    {id: 'tv9', name: 'ஐ', audio: 'https://upload.wikimedia.org/wikipedia/commons/2/20/Ta-%E0%AE%90.ogg'},
+    {id: 'tv10', name: 'ஒ', audio: 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Ta-%E0%AE%92.ogg'},
+    {id: 'tv11', name: 'ஓ', audio: 'https://upload.wikimedia.org/wikipedia/commons/1/15/Ta-%E0%AE%93.ogg'},
+    {id: 'tv12', name: 'ஔ', audio: 'https://upload.wikimedia.org/wikipedia/commons/5/53/Ta-%E0%AE%94.ogg'},
+]},
+{ title: 'Ayutha Eluthu',
+    items : [{id: 'ae1', name: 'ஃ', audio: 'https://upload.wikimedia.org/wikipedia/commons/0/0f/Ta-%E0%AE%83.ogg'}
+]}]
+let consonants=[{ title: 'Tamil Consonants',
+    items : [
+    {id: 1, name: 'க்', audio: 'https://upload.wikimedia.org/wikipedia/commons/f/f3/Ta-%E0%AE%95%E0%AF%8D.ogg'},
+    {id: 2, name: 'ங்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/d/d1/Ta-%E0%AE%99%E0%AF%8D.ogg/Ta-%E0%AE%99%E0%AF%8D.ogg.mp3'},
+    {id: 3, name: 'ச்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/6/68/Ta-%E0%AE%9A%E0%AF%8D.ogg/Ta-%E0%AE%9A%E0%AF%8D.ogg.mp3'},
+    {id: 4, name: 'ஞ்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c2/Ta-%E0%AE%9E%E0%AF%8D.ogg/Ta-%E0%AE%9E%E0%AF%8D.ogg.mp3'},
+    {id: 5, name: 'ட்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/7/7b/Ta-%E0%AE%9F%E0%AF%8D.ogg/Ta-%E0%AE%9F%E0%AF%8D.ogg.mp3'},
+    {id: 6, name: 'ண்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/3/31/Ta-%E0%AE%A3%E0%AF%8D.ogg/Ta-%E0%AE%A3%E0%AF%8D.ogg.mp3'},
+    {id: 7, name: 'த்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e7/Ta-%E0%AE%A4%E0%AF%8D.ogg/Ta-%E0%AE%A4%E0%AF%8D.ogg.mp3'},
+    {id: 8, name: 'ந்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/9/90/Ta-%E0%AE%A8%E0%AF%8D.ogg/Ta-%E0%AE%A8%E0%AF%8D.ogg.mp3'},
+    {id: 9, name: 'ப்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f8/Ta-%E0%AE%AA%E0%AF%8D.ogg/Ta-%E0%AE%AA%E0%AF%8D.ogg.mp3'},
+    {id: 10, name: 'ம்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/6/62/Ta-%E0%AE%AE%E0%AF%8D.ogg/Ta-%E0%AE%AE%E0%AF%8D.ogg.mp3'},
+    {id: 11, name: 'ய்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/b/bf/Ta-%E0%AE%AF%E0%AF%8D.ogg/Ta-%E0%AE%AF%E0%AF%8D.ogg.mp3'},
+    {id: 12, name: 'ர்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/9/95/Ta-%E0%AE%B0%E0%AF%8D.ogg/Ta-%E0%AE%B0%E0%AF%8D.ogg.mp3'},
+    {id: 13, name: 'ல்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/e/ed/Ta-%E0%AE%B2%E0%AF%8D.ogg/Ta-%E0%AE%B2%E0%AF%8D.ogg.mp3'},
+    {id: 14, name: 'வ்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/0/07/Ta-%E0%AE%B5%E0%AF%8D.ogg/Ta-%E0%AE%B5%E0%AF%8D.ogg.mp3'},
+    {id: 15, name: 'ழ்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/4/46/Ta-%E0%AE%B4%E0%AF%8D.ogg/Ta-%E0%AE%B4%E0%AF%8D.ogg.mp3'},
+    {id: 16, name: 'ள்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/2/2e/Ta-%E0%AE%B3%E0%AF%8D.ogg/Ta-%E0%AE%B3%E0%AF%8D.ogg.mp3'},
+    {id: 17, name: 'ற்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/6/60/Ta-%E0%AE%B1%E0%AF%8D.ogg/Ta-%E0%AE%B1%E0%AF%8D.ogg.mp3'},
+    {id: 18, name: 'ன்', audio: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/a/ac/Ta-%E0%AE%A9%E0%AF%8D.ogg/Ta-%E0%AE%A9%E0%AF%8D.ogg.mp3'},
+]}]
+let pages=[vowels,consonants]
