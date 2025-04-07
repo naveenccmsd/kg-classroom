@@ -58,6 +58,18 @@ class _StudentFormState extends State<StudentForm> {
 
   Future<void> _saveStudent() async {
     if (_formKey.currentState?.validate() ?? false) {
+      final email = _emailController.text;
+      final existingStudent = await FirebaseFirestore.instance
+          .collection('students')
+          .doc(email)
+          .get();
+      if (existingStudent.exists && existingStudent.id != widget.studentId) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email is already in use by another student')),
+        );
+        return;
+      }
+
       final studentData = {
         'name': _nameController.text,
         'dob': _dobController.text,
