@@ -73,7 +73,7 @@ class _AdminScreenState extends State<AdminScreen> {
             final tabController = DefaultTabController.of(context);
             return FloatingActionButton(
               onPressed: () async {
-                if (tabController?.index == 0) {
+                if (tabController.index == 0) {
                   // Add Teacher
                   final result = await Navigator.push(context, MaterialPageRoute(
                     builder: (context) => const TeacherForm(),

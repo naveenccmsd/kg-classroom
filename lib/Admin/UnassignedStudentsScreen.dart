@@ -13,7 +13,6 @@ class _UnassignedStudentsScreenState extends State<UnassignedStudentsScreen> {
   List<Map<String, dynamic>> _students = [];
   List<Map<String, dynamic>> _filteredStudents = [];
   List<Map<String, dynamic>> _classes = [];
-  String _searchQuery = '';
   late Future<List<Map<String, dynamic>>> _unassignedStudentsFuture;
 
   @override
@@ -64,7 +63,6 @@ class _UnassignedStudentsScreenState extends State<UnassignedStudentsScreen> {
       return nameLower.contains(searchLower);
     }).toList();
     setState(() {
-      _searchQuery = query;
       _filteredStudents = filteredStudents;
     });
   }
