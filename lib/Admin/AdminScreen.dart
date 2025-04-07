@@ -15,13 +15,9 @@ class AdminScreen extends StatefulWidget {
 }
 
 class _AdminScreenState extends State<AdminScreen> {
-  static const List<String> unassignedStudents = [
-    'Student 1',
-    'Student 2',
-    'Student 3',
-  ];
 
   List<Map<String, dynamic>> _classes = [];
+  Map<String, dynamic> _staticClasses = {'id': null, 'name': 'Unassigned Students'};
   bool _isLoading = true;
 
   @override
@@ -43,15 +39,16 @@ class _AdminScreenState extends State<AdminScreen> {
         };
       }).toList();
       _classes.sort((a, b) => a['order'].compareTo(b['order'])); // Sort by order
-      _classes.insert(0, {'id': null, 'name': 'Unassigned Students'});
+      // _classes.insert(0, {'id': null, 'name': 'Unassigned Students'});
       _isLoading = false;
     });
     print('Classes fetched: $_classes'); // Debug print
   }
 
   Future<void> _updateClassOrder() async {
+    print('trying to update fetched: $_classes'); // Debug print
     for (int i = 0; i < _classes.length; i++) {
-      await FirebaseFirestore.instance.collection('classes').doc(_classes[i]['id']).update({'order': i});
+      await FirebaseFirestore.instance.collection('classes').doc(_classes[i]['id']).update({'order': i });
     }
   }
 
@@ -165,8 +162,8 @@ class _AdminScreenState extends State<AdminScreen> {
     return ReorderableListView(
       onReorder: (oldIndex, newIndex) {
         setState(() {
-          if (oldIndex == 0 || newIndex == 0) {
-            return; // Prevent reordering the first item
+          if (oldIndex == 0 || newIndex == 0 || oldIndex == newIndex) {
+            return; // Prevent reordering the first item or if there is no change in order
           }
           if (newIndex > oldIndex) {
             newIndex -= 1;
@@ -176,7 +173,14 @@ class _AdminScreenState extends State<AdminScreen> {
         });
         _updateClassOrder();
       },
-      children: _classes.map((classData) {
+      children: [
+        buildUIClasses(_staticClasses),
+        ..._classes.map(buildUIClasses).toList(),
+      ],
+    );
+  }
+
+  ListTile buildUIClasses(classData) {
         return ListTile(
           key: ValueKey(classData['id']),
           title: Text(classData['name']),
@@ -204,9 +208,7 @@ class _AdminScreenState extends State<AdminScreen> {
               ? () => _showClassStudents(context, classData['id'])
               : () => _showUnassignedStudents(context),
         );
-      }).toList(),
-    );
-  }
+      }
 
   Future<List<Map<String, dynamic>>> _fetchTeachers() async {
     final query = await FirebaseFirestore.instance.collection('teachers').get();
