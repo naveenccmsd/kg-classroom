@@ -1,4 +1,5 @@
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'StudentDashboard.dart';
@@ -9,6 +10,9 @@ class RoleSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final studentName = user?.email ?? 'Unknown';
+
     return Scaffold(
       appBar: AppBar(title: const Text('Select Role')),
       body: Column(
@@ -25,7 +29,7 @@ class RoleSelectionScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(
-                builder: (context) => const StudentDashboard(),
+                builder: (context) => StudentDashboard(studentName:studentName),
               ));
             },
             child: const Text('I am a Student'),

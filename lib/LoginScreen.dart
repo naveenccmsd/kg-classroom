@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'RoleSelectionScreen.dart';
+import 'AdminScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,7 +12,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController(text: 'test@test.com');
+  final TextEditingController _emailController = TextEditingController(text: 'admin@test.com');
   final TextEditingController _passwordController = TextEditingController(text: 'Password@123');
   bool _isLogin = true;
 
@@ -28,10 +29,17 @@ class _LoginScreenState extends State<LoginScreen> {
           password: _passwordController.text,
         );
       }
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
-      );
+      if (_emailController.text == 'admin@test.com') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),

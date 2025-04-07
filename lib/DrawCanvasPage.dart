@@ -1,10 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
 class DrawCanvasPage extends StatefulWidget {
   final String imageUrl;
   final bool isTeacher;
+  final String studentName;
 
-  const DrawCanvasPage({required this.imageUrl, required this.isTeacher, Key? key}) : super(key: key);
+  const DrawCanvasPage({required this.imageUrl, required this.isTeacher, required this.studentName, Key? key}) : super(key: key);
 
   @override
   _DrawCanvasPageState createState() => _DrawCanvasPageState();
@@ -20,10 +23,28 @@ class _DrawCanvasPageState extends State<DrawCanvasPage> {
     });
   }
 
+  Future<void> _saveDrawing() async {
+    final drawingData = jsonEncode(points.map((e) => {'dx': e.dx, 'dy': e.dy}).toList());
+    await FirebaseFirestore.instance.collection('drawings').add({
+      'studentName': widget.studentName,
+      'imageUrl': widget.imageUrl,
+      'drawingData': drawingData,
+      'createdAt': Timestamp.now(),
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Draw Canvas')),
+      appBar: AppBar(
+        title: const Text('Draw Canvas'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _saveDrawing,
+          ),
+        ],
+      ),
       body: Stack(
         children: [
           Center(

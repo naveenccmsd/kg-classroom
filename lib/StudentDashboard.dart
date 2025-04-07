@@ -1,11 +1,11 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import 'DrawCanvasPage.dart';
 
 class StudentDashboard extends StatelessWidget {
-  const StudentDashboard({super.key});
+  final String studentName;
+
+  const StudentDashboard({required this.studentName, Key? key}) : super(key: key);
 
   Future<List<Map<String, dynamic>>> _fetchHomework() async {
     final query = await FirebaseFirestore.instance
@@ -38,6 +38,7 @@ class StudentDashboard extends StatelessWidget {
                     builder: (context) => DrawCanvasPage(
                       imageUrl: hw['imageUrl'],
                       isTeacher: false,
+                      studentName: studentName,
                     ),
                   ));
                 },
