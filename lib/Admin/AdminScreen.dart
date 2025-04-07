@@ -183,13 +183,16 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   ListTile buildUIClasses(classData) {
-        return ListTile(
+    final bool hasValidId = classData['id'] != null && classData['id'].isNotEmpty;
+
+    return ListTile(
           key: ValueKey(classData['id']),
           title: Text(classData['name']),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
+              if(hasValidId)
+                IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () async {
                   final result = await Navigator.push(context, MaterialPageRoute(
@@ -200,13 +203,14 @@ class _AdminScreenState extends State<AdminScreen> {
                   }
                 },
               ),
-              IconButton(
+              if(hasValidId)
+                IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: () => _deleteClass(classData['id']),
               ),
             ],
           ),
-          onTap: (classData['id'] != null && classData['id'].isNotEmpty)
+          onTap: hasValidId
               ? () => _showClassStudents(context, classData['id'])
               : () => _showUnassignedStudents(context),
         );
