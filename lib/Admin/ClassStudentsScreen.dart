@@ -48,19 +48,6 @@ class _ClassStudentsScreenState extends State<ClassStudentsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_className ?? 'Class Students'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () async {
-              final result = await Navigator.push(context, MaterialPageRoute(
-                builder: (context) => StudentForm(classId: widget.classId),
-              ));
-              if (result == true) {
-                setState(() {});
-              }
-            },
-          ),
-        ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _fetchClassStudents(),
@@ -103,6 +90,17 @@ class _ClassStudentsScreenState extends State<ClassStudentsScreen> {
             },
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(context, MaterialPageRoute(
+            builder: (context) => StudentForm(classId: widget.classId),
+          ));
+          if (result == true) {
+            setState(() {});
+          }
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
