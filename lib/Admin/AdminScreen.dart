@@ -51,6 +51,45 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _deleteClass(String classId) async {
+    final studentQuery = await FirebaseFirestore.instance
+        .collection('students')
+        .where('classId', isEqualTo: classId)
+        .get();
+
+    final studentCount = studentQuery.docs.length;
+
+    if (studentCount > 0) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Confirm Delete'),
+            content: Text('This class has $studentCount students. Do you want to delete the class and unassign the students?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Delete'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm != true) {
+        return;
+      }
+
+      // Remove classId for the students
+      for (final doc in studentQuery.docs) {
+        await FirebaseFirestore.instance.collection('students').doc(doc.id).update({'classId': null});
+      }
+    }
+
+    // Delete the class
     await FirebaseFirestore.instance.collection('classes').doc(classId).delete();
     _fetchClasses();
   }

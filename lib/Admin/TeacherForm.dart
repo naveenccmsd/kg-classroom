@@ -12,31 +12,52 @@ class TeacherForm extends StatefulWidget {
 
 class _TeacherFormState extends State<TeacherForm> {
   final _formKey = GlobalKey<FormState>();
-  late String _name;
-  late String _email;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _name = widget.teacher?['name'] ?? '';
-    _email = widget.teacher?['email'] ?? '';
+    _emailController.text = widget.teacher?['email'] ?? '';
+    _nameController.text = widget.teacher?['name'] ?? '';
+
   }
 
   Future<void> _saveTeacher() async {
     if (_formKey.currentState!.validate()) {
+      final email = _emailController.text;
+      final name = _nameController.text;
+
+      // Check if email exists in students collection
+      final existingStudent = await FirebaseFirestore.instance
+          .collection('students')
+          .doc(email)
+          .get();
+      print(email);
+      print(existingStudent.id);
+
+      // Check if email exists in teachers collection
+      final existingTeacher = await FirebaseFirestore.instance
+          .collection('teachers')
+          .doc(email)
+          .get();
+      print(existingTeacher.id);
+      if ((existingTeacher.exists && existingTeacher.id != widget.teacher?['email']) || existingStudent.exists) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Email is already in use by another student or teacher')),
+          );
+        return;
+      }
+
       _formKey.currentState!.save();
       final data = {
-        'name': _name,
-        'email': _email,
+        'name': name,
+        'email': email,
       };
-      if (widget.teacher == null) {
-        await FirebaseFirestore.instance.collection('teachers').add(data);
-      } else {
-        await FirebaseFirestore.instance
-            .collection('teachers')
-            .doc(widget.teacher!['id'])
-            .update(data);
-      }
+      await FirebaseFirestore.instance
+          .collection('teachers')
+          .doc(email)
+          .set(data);
       Navigator.pop(context, true);
     }
   }
@@ -52,7 +73,7 @@ class _TeacherFormState extends State<TeacherForm> {
           child: Column(
             children: [
               TextFormField(
-                initialValue: _name,
+                controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Name'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -60,12 +81,10 @@ class _TeacherFormState extends State<TeacherForm> {
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _name = value!;
-                },
+
               ),
               TextFormField(
-                initialValue: _email,
+                controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -73,9 +92,7 @@ class _TeacherFormState extends State<TeacherForm> {
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _email = value!;
-                },
+
               ),
               const SizedBox(height: 20),
               ElevatedButton(
