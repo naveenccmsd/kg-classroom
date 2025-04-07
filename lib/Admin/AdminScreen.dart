@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'ClassForm.dart';
@@ -17,7 +16,7 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen> {
 
   List<Map<String, dynamic>> _classes = [];
-  Map<String, dynamic> _staticClasses = {'id': null, 'name': 'Unassigned Students'};
+  final Map<String, dynamic> _staticClasses = {'id': "", 'name': 'Unassigned Students'};
   bool _isLoading = true;
 
   @override
@@ -46,7 +45,6 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _updateClassOrder() async {
-    print('trying to update fetched: $_classes'); // Debug print
     for (int i = 0; i < _classes.length; i++) {
       await FirebaseFirestore.instance.collection('classes').doc(_classes[i]['id']).update({'order': i });
     }
@@ -161,17 +159,21 @@ class _AdminScreenState extends State<AdminScreen> {
     }
     return ReorderableListView(
       onReorder: (oldIndex, newIndex) {
+        if (oldIndex == 0 || newIndex == 0 || oldIndex == newIndex) {
+          return; // Prevent reordering the first item or if there is no change in order
+        }
         setState(() {
-          if (oldIndex == 0 || newIndex == 0 || oldIndex == newIndex) {
-            return; // Prevent reordering the first item or if there is no change in order
-          }
           if (newIndex > oldIndex) {
             newIndex -= 1;
           }
-          final classData = _classes.removeAt(oldIndex);
-          _classes.insert(newIndex, classData);
+          final classData = _classes.removeAt(oldIndex-1);
+          _classes.insert(newIndex-1, classData);
+          // Update the order field in _classes
+          for (int i = 0; i < _classes.length; i++) {
+            _classes[i]['order'] = i;
+          }
         });
-        _updateClassOrder();
+        _updateClassOrder(); // Call the function outside of setState
       },
       children: [
         buildUIClasses(_staticClasses),
@@ -204,7 +206,7 @@ class _AdminScreenState extends State<AdminScreen> {
               ),
             ],
           ),
-          onTap: classData['id'] != null
+          onTap: (classData['id'] != null && classData['id'].isNotEmpty)
               ? () => _showClassStudents(context, classData['id'])
               : () => _showUnassignedStudents(context),
         );
