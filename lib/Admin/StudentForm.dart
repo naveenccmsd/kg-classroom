@@ -15,6 +15,7 @@ class _StudentFormState extends State<StudentForm> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   String? _selectedClassId;
   List<Map<String, dynamic>> _classes = [];
 
@@ -50,6 +51,7 @@ class _StudentFormState extends State<StudentForm> {
     if (data != null) {
       _nameController.text = data['name'] ?? '';
       _dobController.text = data['dob'] ?? '';
+      _emailController.text = data['email'] ?? '';
       _selectedClassId = data['classId'];
     }
   }
@@ -59,13 +61,10 @@ class _StudentFormState extends State<StudentForm> {
       final studentData = {
         'name': _nameController.text,
         'dob': _dobController.text,
+        'email': _emailController.text,
         'classId': _selectedClassId,
       };
-      if (widget.studentId != null) {
-        await FirebaseFirestore.instance.collection('students').doc(widget.studentId).update(studentData);
-      } else {
-        await FirebaseFirestore.instance.collection('students').add(studentData);
-      }
+      await FirebaseFirestore.instance.collection('students').doc(_emailController.text).set(studentData);
       Navigator.pop(context, true);
     }
   }
@@ -114,6 +113,16 @@ class _StudentFormState extends State<StudentForm> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a date of birth';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter an email';
                   }
                   return null;
                 },
