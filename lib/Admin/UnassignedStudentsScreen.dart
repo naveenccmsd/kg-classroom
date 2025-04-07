@@ -25,7 +25,10 @@ class _UnassignedStudentsScreenState extends State<UnassignedStudentsScreen> {
 
   Future<List<Map<String, dynamic>>> _fetchUnassignedStudents() async {
     final query = await FirebaseFirestore.instance.collection('students').get();
-    final students = query.docs.where((doc) => !doc.data().containsKey('classId')).map((doc) {
+    final students = query.docs.where((doc) {
+      final data = doc.data();
+      return !data.containsKey('classId') || data['classId'] == null || data['classId'].isEmpty;
+    }).map((doc) {
       final data = doc.data();
       return {
         'id': doc.id,

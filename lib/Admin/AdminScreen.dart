@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'ClassStudentsScreen.dart';
 import 'ClassForm.dart';
 import 'TeacherForm.dart';
+import 'UnassignedStudentsScreen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -196,19 +197,5 @@ class _AdminScreenState extends State<AdminScreen> {
     Navigator.push(context, MaterialPageRoute(
       builder: (context) => UnassignedStudentsScreen(),
     ));
-  }
-}
-
-class UnassignedStudentsScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Unassigned Students'),
-      ),
-      body: Center(
-        child: Text('Unassigned Students Screen'),
-      ),
-    );
   }
 }
