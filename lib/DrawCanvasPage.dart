@@ -38,7 +38,7 @@ class _DrawCanvasPageState extends State<DrawCanvasPage> {
             onPanUpdate: (details) {
               setState(() {
                 RenderBox renderBox = context.findRenderObject() as RenderBox;
-                points.add(renderBox.globalToLocal(details.globalPosition));
+                points.add(renderBox.globalToLocal(details.localPosition));
               });
             },
             onPanEnd: (details) {
