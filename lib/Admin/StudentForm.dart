@@ -1,5 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../services/student_service.dart';
+
 
 class StudentForm extends StatefulWidget {
   final String? studentId;
@@ -13,6 +14,7 @@ class StudentForm extends StatefulWidget {
 
 class _StudentFormState extends State<StudentForm> {
   final _formKey = GlobalKey<FormState>();
+  final _studentService = StudentService();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -32,22 +34,14 @@ class _StudentFormState extends State<StudentForm> {
   }
 
   Future<void> _fetchClasses() async {
-    final query = await FirebaseFirestore.instance.collection('classes').get();
-    final classes = query.docs.map((doc) {
-      final data = doc.data();
-      return {
-        'id': doc.id,
-        'name': data['name'] ?? 'No Name',
-      };
-    }).toList();
+    final classes = await _studentService.fetchClasses();
     setState(() {
       _classes = classes;
     });
   }
 
   Future<void> _fetchStudentData() async {
-    final doc = await FirebaseFirestore.instance.collection('students').doc(widget.studentId).get();
-    final data = doc.data();
+    final data = await _studentService.fetchStudentData(widget.studentId!);
     if (data != null) {
       _nameController.text = data['name'] ?? '';
       _dobController.text = data['dob'] ?? '';
@@ -61,21 +55,8 @@ class _StudentFormState extends State<StudentForm> {
       final email = _emailController.text;
       final previousEmail = widget.studentId;
 
-      // Check if email exists in students collection
-      final existingStudent = await FirebaseFirestore.instance
-          .collection('students')
-          .doc(email)
-          .get();
-
-      // Check if email exists in teachers collection
-      final existingTeacher = await FirebaseFirestore.instance
-          .collection('teachers')
-          .doc(email)
-          .get();
-
-
-      if ((existingStudent.exists && existingStudent.id != previousEmail) ||
-          existingTeacher.exists) {
+      final isEmailInUse = await _studentService.isEmailInUse(email, previousEmail);
+      if (isEmailInUse) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Email is already in use by another student or teacher')),
         );
@@ -88,13 +69,7 @@ class _StudentFormState extends State<StudentForm> {
         'email': _emailController.text,
         'classId': _selectedClassId,
       };
-
-      // Remove the previous email document if the email has changed
-      if (previousEmail != null && previousEmail != email) {
-        await FirebaseFirestore.instance.collection('students').doc(previousEmail).delete();
-      }
-      
-      await FirebaseFirestore.instance.collection('students').doc(_emailController.text).set(studentData);
+      await _studentService.saveStudent(previousEmail, studentData);
       Navigator.pop(context, true);
     }
   }
