@@ -17,8 +17,8 @@ class RoleSelectionScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Select Role')),
-      body: FutureBuilder<bool>(
-        future: _roleService.isTeacher(),
+      body: FutureBuilder<List<String>>(
+        future: _roleService.getAuthRoles(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -28,7 +28,29 @@ class RoleSelectionScreen extends StatelessWidget {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final isTeacher = snapshot.data ?? false;
+          final roles = snapshot.data ?? [];
+          final isTeacher = roles.contains('teacher');
+          final isStudent = roles.contains('student');
+
+          if (isTeacher && !isStudent) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TeacherDashboard(),
+                ),
+              );
+            });
+          } else if (isStudent && !isTeacher) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StudentDashboard(studentName: studentName),
+                ),
+              );
+            });
+          }
 
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -42,14 +64,15 @@ class RoleSelectionScreen extends StatelessWidget {
                   },
                   child: const Text('I am a Teacher'),
                 ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => StudentDashboard(studentName: studentName),
-                  ));
-                },
-                child: const Text('I am a Student'),
-              ),
+              if (isStudent)
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => StudentDashboard(studentName: studentName),
+                    ));
+                  },
+                  child: const Text('I am a Student'),
+                ),
             ],
           );
         },
