@@ -3,8 +3,6 @@ import 'student_service.dart';
 import 'teacher_service.dart';
 
 class RoleService extends FirebaseService {
-  final StudentService _studentService = StudentService();
-  final TeacherService _teacherService = TeacherService();
 
   Future<void> addRole(String email, String role) async {
     final docRef = firestore.collection('roles').doc(email);
