@@ -30,13 +30,19 @@ class StudentDashboard extends StatelessWidget {
             itemCount: homeworkList.length,
             itemBuilder: (context, index) {
               final hw = homeworkList[index];
+              final imageUrl = hw['imageUrl'] ?? 'No Image Available'; // Default value
+
+              if (imageUrl == 'No Image Available') {
+                return const SizedBox.shrink(); // Skip invalid entries
+              }
+
               return ListTile(
                 leading: const Icon(Icons.image),
-                title: Text(hw['imageUrl']),
+                title: Text(imageUrl),
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(
                     builder: (context) => DrawCanvasPage(
-                      imageUrl: hw['imageUrl'],
+                      imageUrl: imageUrl,
                       isTeacher: false,
                       studentName: studentName,
                     ),

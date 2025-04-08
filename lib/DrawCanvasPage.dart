@@ -1,6 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
 
 class DrawCanvasPage extends StatefulWidget {
   final String imageUrl;
@@ -16,20 +14,13 @@ class DrawCanvasPage extends StatefulWidget {
 class _DrawCanvasPageState extends State<DrawCanvasPage> {
   List<Offset> points = [];
   bool isEraser = false;
+  double imageWidth = 0.0;
+  double imageHeight = 0.0;
+  final GlobalKey _imageKey = GlobalKey(); // Key for the image widget
 
   void _clearCanvas() {
     setState(() {
       points.clear();
-    });
-  }
-
-  Future<void> _saveDrawing() async {
-    final drawingData = jsonEncode(points.map((e) => {'dx': e.dx, 'dy': e.dy}).toList());
-    await FirebaseFirestore.instance.collection('drawings').add({
-      'studentName': widget.studentName,
-      'imageUrl': widget.imageUrl,
-      'drawingData': drawingData,
-      'createdAt': Timestamp.now(),
     });
   }
 
@@ -38,60 +29,88 @@ class _DrawCanvasPageState extends State<DrawCanvasPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Draw Canvas'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveDrawing,
-          ),
-        ],
       ),
-      body: Stack(
-        children: [
-          Center(
-            child: Image.network(
-              widget.imageUrl,
-              fit: BoxFit.contain,
-              width: double.infinity,
-              height: double.infinity,
-            ),
-          ),
-          GestureDetector(
-            onPanUpdate: (details) {
-              setState(() {
-                RenderBox renderBox = context.findRenderObject() as RenderBox;
-                points.add(renderBox.globalToLocal(details.localPosition));
-              });
-            },
-            onPanEnd: (details) {
-              points.add(Offset.zero);
-            },
-            child: CustomPaint(
-              painter: _DrawPainter(points: points, isEraser: isEraser),
-              size: Size.infinite,
-            ),
-          ),
-          Positioned(
-            bottom: 20,
-            left: 20,
-            child: Column(
-              children: [
-                FloatingActionButton(
-                  onPressed: () {
-                    setState(() {
-                      isEraser = !isEraser;
-                    });
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            children: [
+              Center(
+                child: Image.network(
+                  widget.imageUrl,
+                  key: _imageKey, // Assign the key to the image
+                  fit: BoxFit.contain,
+                  width: constraints.maxWidth,
+                  height: constraints.maxHeight,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        final renderBox = _imageKey.currentContext?.findRenderObject() as RenderBox?;
+                        if (renderBox != null) {
+                          setState(() {
+                            imageWidth = renderBox.size.width;
+                            imageHeight = renderBox.size.height;
+                          });
+                        }
+                      });
+                      return child;
+                    } else {
+                      return const Center(child: CircularProgressIndicator());
+                    }
                   },
-                  child: Icon(isEraser ? Icons.brush : Icons.create),
                 ),
-                const SizedBox(height: 10),
-                FloatingActionButton(
-                  onPressed: _clearCanvas,
-                  child: const Icon(Icons.delete),
+              ),
+              GestureDetector(
+                onPanUpdate: (details) {
+                  setState(() {
+                    final renderBox = _imageKey.currentContext?.findRenderObject() as RenderBox?;
+                    if (renderBox != null) {
+                      final localPosition = renderBox.globalToLocal(details.globalPosition);
+                      if (localPosition.dx >= 0 &&
+                          localPosition.dy >= 0 &&
+                          localPosition.dx <= imageWidth &&
+                          localPosition.dy <= imageHeight) {
+                        points.add(Offset(
+                          localPosition.dx / imageWidth, // Normalize X
+                          localPosition.dy / imageHeight, // Normalize Y
+                        ));
+                      }
+                    }
+                  });
+                },
+                onPanEnd: (details) {
+                  points.add(Offset.zero);
+                },
+                child: CustomPaint(
+                  painter: _DrawPainter(points: points, imageWidth: imageWidth, imageHeight: imageHeight),
+                  size: Size.infinite,
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+              Positioned(
+                bottom: 20,
+                left: 20,
+                child: Column(
+                  children: [
+                    FloatingActionButton(
+                      heroTag: 'paint',
+                      onPressed: () {
+                        setState(() {
+                          isEraser = !isEraser;
+                        });
+                      },
+                      child: Icon(isEraser ? Icons.brush : Icons.create),
+                    ),
+                    const SizedBox(height: 10),
+                    FloatingActionButton(
+                      heroTag: 'eraser',
+                      onPressed: _clearCanvas,
+                      child: const Icon(Icons.delete),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -99,21 +118,25 @@ class _DrawCanvasPageState extends State<DrawCanvasPage> {
 
 class _DrawPainter extends CustomPainter {
   final List<Offset> points;
-  final bool isEraser;
+  final double imageWidth;
+  final double imageHeight;
 
-  _DrawPainter({required this.points, required this.isEraser});
+  _DrawPainter({required this.points, required this.imageWidth, required this.imageHeight});
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (imageWidth == 0 || imageHeight == 0) return;
+
     Paint paint = Paint()
-      ..color = isEraser ? Colors.transparent : Colors.blue
+      ..color = Colors.blue
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 5.0
-      ..blendMode = isEraser ? BlendMode.clear : BlendMode.srcOver;
+      ..strokeWidth = 5.0;
 
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != Offset.zero && points[i + 1] != Offset.zero) {
-        canvas.drawLine(points[i], points[i + 1], paint);
+        final p1 = Offset(points[i].dx * imageWidth, points[i].dy * imageHeight); // Scale X
+        final p2 = Offset(points[i + 1].dx * imageWidth, points[i + 1].dy * imageHeight); // Scale Y
+        canvas.drawLine(p1, p2, paint);
       }
     }
   }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 class AssignHomework extends StatefulWidget {
   final Map<String, dynamic> homework;
-
   const AssignHomework({Key? key, required this.homework}) : super(key: key);
 
   @override
@@ -44,15 +43,22 @@ class _AssignHomeworkState extends State<AssignHomework> {
             itemCount: studentList.length,
             itemBuilder: (context, index) {
               final student = studentList[index];
+              final studentName = student['name'] ?? 'Unknown'; // Default value
+              final studentId = student['id'] ?? ''; // Default value
+
+              if (studentId.isEmpty) {
+                return const SizedBox.shrink(); // Skip invalid entries
+              }
+
               return CheckboxListTile(
-                title: Text(student['name']),
-                value: _selectedStudents.contains(student['id']),
+                title: Text(studentName),
+                value: _selectedStudents.contains(studentId),
                 onChanged: (bool? value) {
                   setState(() {
                     if (value == true) {
-                      _selectedStudents.add(student['id']);
+                      _selectedStudents.add(studentId);
                     } else {
-                      _selectedStudents.remove(student['id']);
+                      _selectedStudents.remove(studentId);
                     }
                   });
                 },
