@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:untitled/services/role_service.dart';
 
 import 'RoleSelectionScreen.dart';
 import 'Admin/AdminScreen.dart';
@@ -14,6 +15,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController(text: 'admin@test.com');
   final TextEditingController _passwordController = TextEditingController(text: 'Password@123');
+  final RoleService _roleService = RoleService();
   bool _isLogin = true;
 
   Future<void> _authenticate() async {
@@ -29,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
           password: _passwordController.text,
         );
       }
-      if (_emailController.text == 'admin@test.com') {
+      if (await _roleService.isAdmin()) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const AdminScreen()),

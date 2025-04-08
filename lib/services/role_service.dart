@@ -1,8 +1,32 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'firebase_service.dart';
-import 'student_service.dart';
-import 'teacher_service.dart';
 
 class RoleService extends FirebaseService {
+
+  Future<List<String>> getRoles(String email) async {
+    final docRef = firestore.collection('roles').doc(email);
+    final doc = await docRef.get();
+
+    if (doc.exists) {
+      final data = doc.data();
+      return List<String>.from(data?['roles'] ?? []);
+    }
+    return [];
+  }
+
+  Future<bool> isAdmin() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('No user is currently signed in.');
+    }
+    final email = user.email;
+    if (email == null) {
+      throw Exception('Signed-in user does not have an email.');
+    }
+    final roles = await getRoles(email);
+    return roles.contains('admin');
+  }
 
   Future<void> addRole(String email, String role) async {
     final docRef = firestore.collection('roles').doc(email);
