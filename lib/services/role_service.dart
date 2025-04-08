@@ -16,6 +16,16 @@ class RoleService extends FirebaseService {
   }
 
   Future<bool> isAdmin() async {
+    List<String> roles = await getAuthRoles();
+    return roles.contains('admin');
+  }
+
+  Future<bool> isTeacher() async {
+    List<String> roles = await getAuthRoles();
+    return roles.contains('teacher');
+  }
+
+  Future<List<String>> getAuthRoles() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       throw Exception('No user is currently signed in.');
@@ -25,7 +35,7 @@ class RoleService extends FirebaseService {
       throw Exception('Signed-in user does not have an email.');
     }
     final roles = await getRoles(email);
-    return roles.contains('admin');
+    return roles;
   }
 
   Future<void> addRole(String email, String role) async {
