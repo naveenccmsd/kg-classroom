@@ -27,6 +27,8 @@ class _TeacherFormState extends State<TeacherForm> {
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text;
       final name = _nameController.text;
+      final previousEmail = widget.teacher?['email'];
+
 
       // Check if email exists in students collection
       final existingStudent = await FirebaseFirestore.instance
@@ -42,7 +44,7 @@ class _TeacherFormState extends State<TeacherForm> {
           .doc(email)
           .get();
       print(existingTeacher.id);
-      if ((existingTeacher.exists && existingTeacher.id != widget.teacher?['email']) || existingStudent.exists) {
+      if ((existingTeacher.exists && existingTeacher.id != previousEmail) || existingStudent.exists) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Email is already in use by another student or teacher')),
           );
@@ -54,6 +56,11 @@ class _TeacherFormState extends State<TeacherForm> {
         'name': name,
         'email': email,
       };
+      // Remove the previous email document if the email has changed
+      if (previousEmail != null && previousEmail != email) {
+        await FirebaseFirestore.instance.collection('teachers').doc(previousEmail).delete();
+      }
+      // Save the new or updated teacher data
       await FirebaseFirestore.instance
           .collection('teachers')
           .doc(email)
