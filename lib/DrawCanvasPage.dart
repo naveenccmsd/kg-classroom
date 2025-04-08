@@ -16,7 +16,7 @@ class _DrawCanvasPageState extends State<DrawCanvasPage> {
   bool isEraser = false;
   double imageWidth = 0.0;
   double imageHeight = 0.0;
-  final GlobalKey _imageKey = GlobalKey(); // Key for the image widget
+  final GlobalKey _imageKey = GlobalKey();
 
   void _clearCanvas() {
     setState(() {
@@ -32,85 +32,90 @@ class _DrawCanvasPageState extends State<DrawCanvasPage> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          return Stack(
-            children: [
-              Center(
-                child: Image.network(
-                  widget.imageUrl,
-                  key: _imageKey, // Assign the key to the image
-                  fit: BoxFit.contain,
-                  width: constraints.maxWidth,
-                  height: constraints.maxHeight,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        final renderBox = _imageKey.currentContext?.findRenderObject() as RenderBox?;
-                        if (renderBox != null) {
-                          setState(() {
-                            imageWidth = renderBox.size.width;
-                            imageHeight = renderBox.size.height;
+          return SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Stack(
+                children: [
+                  Center(
+                    child: Image.network(
+                      widget.imageUrl,
+                      key: _imageKey,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            final renderBox = _imageKey.currentContext?.findRenderObject() as RenderBox?;
+                            if (renderBox != null && imageWidth == 0.0 && imageHeight == 0.0) {
+                              setState(() {
+                                imageWidth = renderBox.size.width;
+                                imageHeight = renderBox.size.height;
+                              });
+                            }
                           });
+                          return child;
+                        } else {
+                          return const Center(child: CircularProgressIndicator());
                         }
-                      });
-                      return child;
-                    } else {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                  },
-                ),
-              ),
-              GestureDetector(
-                onPanUpdate: (details) {
-                  setState(() {
-                    final renderBox = _imageKey.currentContext?.findRenderObject() as RenderBox?;
-                    if (renderBox != null) {
-                      final localPosition = renderBox.globalToLocal(details.globalPosition);
-                      if (localPosition.dx >= 0 &&
-                          localPosition.dy >= 0 &&
-                          localPosition.dx <= imageWidth &&
-                          localPosition.dy <= imageHeight) {
-                        points.add(Offset(
-                          localPosition.dx / imageWidth, // Normalize X
-                          localPosition.dy / imageHeight, // Normalize Y
-                        ));
-                      }
-                    }
-                  });
-                },
-                onPanEnd: (details) {
-                  points.add(Offset.zero);
-                },
-                child: CustomPaint(
-                  painter: _DrawPainter(points: points, imageWidth: imageWidth, imageHeight: imageHeight),
-                  size: Size.infinite,
-                ),
-              ),
-              Positioned(
-                bottom: 20,
-                left: 20,
-                child: Column(
-                  children: [
-                    FloatingActionButton(
-                      heroTag: 'paint',
-                      onPressed: () {
+                      },
+                    ),
+                  ),
+                  if (imageWidth > 0 && imageHeight > 0)
+                    GestureDetector(
+                      onPanUpdate: (details) {
                         setState(() {
-                          isEraser = !isEraser;
+                          final renderBox = _imageKey.currentContext?.findRenderObject() as RenderBox?;
+                          if (renderBox != null) {
+                            final localPosition = renderBox.globalToLocal(details.globalPosition);
+                            if (localPosition.dx >= 0 &&
+                                localPosition.dy >= 0 &&
+                                localPosition.dx <= imageWidth &&
+                                localPosition.dy <= imageHeight) {
+                              points.add(Offset(
+                                localPosition.dx / imageWidth,
+                                localPosition.dy / imageHeight,
+                              ));
+                            }
+                          }
                         });
                       },
-                      child: Icon(isEraser ? Icons.brush : Icons.create),
+                      onPanEnd: (details) {
+                        points.add(Offset.zero);
+                      },
+                      child: SizedBox(
+                        width: imageWidth,
+                        height: imageHeight,
+                        child: CustomPaint(
+                          painter: _DrawPainter(points: points, imageWidth: imageWidth, imageHeight: imageHeight),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    FloatingActionButton(
-                      heroTag: 'eraser',
-                      onPressed: _clearCanvas,
-                      child: const Icon(Icons.delete),
-                    ),
-                  ],
-                ),
+                ],
               ),
-            ],
+            ),
           );
         },
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'paint',
+            onPressed: () {
+              setState(() {
+                isEraser = !isEraser;
+              });
+            },
+            child: Icon(isEraser ? Icons.brush : Icons.create),
+          ),
+          const SizedBox(height: 10),
+          FloatingActionButton(
+            heroTag: 'eraser',
+            onPressed: _clearCanvas,
+            child: const Icon(Icons.delete),
+          ),
+        ],
       ),
     );
   }
@@ -134,8 +139,8 @@ class _DrawPainter extends CustomPainter {
 
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != Offset.zero && points[i + 1] != Offset.zero) {
-        final p1 = Offset(points[i].dx * imageWidth, points[i].dy * imageHeight); // Scale X
-        final p2 = Offset(points[i + 1].dx * imageWidth, points[i + 1].dy * imageHeight); // Scale Y
+        final p1 = Offset(points[i].dx * imageWidth, points[i].dy * imageHeight);
+        final p2 = Offset(points[i + 1].dx * imageWidth, points[i + 1].dy * imageHeight);
         canvas.drawLine(p1, p2, paint);
       }
     }
