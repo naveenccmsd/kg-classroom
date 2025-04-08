@@ -1,57 +1,33 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'StudentForm.dart';
+import '../services/class_service.dart';
+import '../services/student_service.dart';
 
 class UnassignedStudentsScreen extends StatefulWidget {
-  const UnassignedStudentsScreen({super.key});
+  const UnassignedStudentsScreen({Key? key}) : super(key: key);
 
   @override
   _UnassignedStudentsScreenState createState() => _UnassignedStudentsScreenState();
 }
 
 class _UnassignedStudentsScreenState extends State<UnassignedStudentsScreen> {
+  final _studentService = StudentService();
+  final _classService = ClassService();
   List<Map<String, dynamic>> _students = [];
   List<Map<String, dynamic>> _filteredStudents = [];
   List<Map<String, dynamic>> _classes = [];
-  late Future<List<Map<String, dynamic>>> _unassignedStudentsFuture;
 
   @override
   void initState() {
     super.initState();
-    _unassignedStudentsFuture = _fetchUnassignedStudents();
-    _fetchClasses();
+    _fetchData();
   }
 
-  Future<List<Map<String, dynamic>>> _fetchUnassignedStudents() async {
-    final query = await FirebaseFirestore.instance.collection('students').get();
-    final students = query.docs.where((doc) {
-      final data = doc.data();
-      return !data.containsKey('classId') || data['classId'] == null || data['classId'].isEmpty;
-    }).map((doc) {
-      final data = doc.data();
-      return {
-        'id': doc.id,
-        'name': data['name'] ?? 'No Name',
-        'dob': data['dob'] ?? 'No DOB',
-      };
-    }).toList();
+  Future<void> _fetchData() async {
+    final students = await _studentService.fetchUnassignedStudents();
+    final classes = await _classService.fetchClasses();
     setState(() {
       _students = students;
       _filteredStudents = students;
-    });
-    return students;
-  }
-
-  Future<void> _fetchClasses() async {
-    final query = await FirebaseFirestore.instance.collection('classes').get();
-    final classes = query.docs.map((doc) {
-      final data = doc.data();
-      return {
-        'id': doc.id,
-        'name': data['name'] ?? 'No Name',
-      };
-    }).toList();
-    setState(() {
       _classes = classes;
     });
   }
@@ -67,20 +43,6 @@ class _UnassignedStudentsScreenState extends State<UnassignedStudentsScreen> {
     });
   }
 
-  Future<void> _assignStudentToClass(String studentId, String classId) async {
-    await FirebaseFirestore.instance.collection('students').doc(studentId).update({'classId': classId});
-    _unassignedStudentsFuture = _fetchUnassignedStudents();
-  }
-
-  List<DropdownMenuItem<String>> _buildClassDropdownItems() {
-    return _classes.map((classData) {
-      return DropdownMenuItem<String>(
-        value: classData['id'],
-        child: Text(classData['name']),
-      );
-    }).toList();
-  }
-
   void _confirmAndAssignStudent(String studentId, String classId, String className) {
     showDialog(
       context: context,
@@ -94,8 +56,9 @@ class _UnassignedStudentsScreenState extends State<UnassignedStudentsScreen> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                _assignStudentToClass(studentId, classId);
+              onPressed: () async {
+                await _studentService.assignStudentToClass(studentId, classId);
+                await _fetchData();
                 Navigator.pop(context);
               },
               child: const Text('Confirm'),
@@ -109,9 +72,7 @@ class _UnassignedStudentsScreenState extends State<UnassignedStudentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Unassigned Students'),
-      ),
+      appBar: AppBar(title: const Text('Unassigned Students')),
       body: Column(
         children: [
           Padding(
@@ -125,74 +86,33 @@ class _UnassignedStudentsScreenState extends State<UnassignedStudentsScreen> {
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _unassignedStudentsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return const Center(child: Text('Error loading students'));
-                }
-                if (snapshot.data == null || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No students found'));
-                }
-                final studentList = _filteredStudents;
-                return ListView.builder(
-                  itemCount: studentList.length,
-                  itemBuilder: (context, index) {
-                    final student = studentList[index];
-                    return ListTile(
-                      title: Text(student['name']),
-                      subtitle: Text('DOB: ${student['dob']}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit),
-                            onPressed: () async {
-                              final result = await Navigator.push(context, MaterialPageRoute(
-                                builder: (context) => StudentForm(studentId: student['id']),
-                              ));
-                              if (result == true) {
-                                setState(() {
-                                  _unassignedStudentsFuture = _fetchUnassignedStudents();
-                                });
-                              }
-                            },
-                          ),
-                          DropdownButton<String>(
-                            hint: const Text('Assign to Class'),
-                            items: _buildClassDropdownItems(),
-                            onChanged: (classId) {
-                              if (classId != null) {
-                                final className = _classes.firstWhere((classData) => classData['id'] == classId)['name'];
-                                _confirmAndAssignStudent(student['id'], classId, className);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+            child: ListView.builder(
+              itemCount: _filteredStudents.length,
+              itemBuilder: (context, index) {
+                final student = _filteredStudents[index];
+                return ListTile(
+                  title: Text(student['name']),
+                  subtitle: Text('DOB: ${student['dob']}'),
+                  trailing: DropdownButton<String>(
+                    hint: const Text('Assign to Class'),
+                    items: _classes.map((classData) {
+                      return DropdownMenuItem<String>(
+                        value: classData['id'],
+                        child: Text(classData['name']),
+                      );
+                    }).toList(),
+                    onChanged: (classId) {
+                      if (classId != null) {
+                        final className = _classes.firstWhere((c) => c['id'] == classId)['name'];
+                        _confirmAndAssignStudent(student['id'], classId, className);
+                      }
+                    },
+                  ),
                 );
               },
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(context, MaterialPageRoute(
-            builder: (context) => const StudentForm(),
-          ));
-          if (result == true) {
-            setState(() {
-              _unassignedStudentsFuture = _fetchUnassignedStudents();
-            });
-          }
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }

@@ -1,5 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:untitled/services/class_service.dart';
+import '../services/student_service.dart';
 import 'StudentForm.dart';
 
 class ClassStudentsScreen extends StatefulWidget {
@@ -12,82 +13,60 @@ class ClassStudentsScreen extends StatefulWidget {
 }
 
 class _ClassStudentsScreenState extends State<ClassStudentsScreen> {
+  final _studentService = StudentService();
+  final _classService = ClassService();
   String? _className;
+  List<Map<String, dynamic>> _students = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchClassName();
+    _fetchData();
   }
 
-  Future<void> _fetchClassName() async {
-    final doc = await FirebaseFirestore.instance.collection('classes').doc(widget.classId).get();
+  Future<void> _fetchData() async {
+    final className = await _classService.fetchClassName(widget.classId);
+    final students = await _studentService.fetchClassStudents(widget.classId);
     setState(() {
-      _className = doc.data()?['name'] ?? 'Class Students';
+      _className = className ?? 'Class Students';
+      _students = students;
     });
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchClassStudents() async {
-    final query = await FirebaseFirestore.instance.collection('students').where('classId', isEqualTo: widget.classId).get();
-    return query.docs.map((doc) {
-      final data = doc.data();
-      return {
-        'id': doc.id,
-        'name': data['name'] ?? 'No Name',
-        'dob': data['dob'] ?? 'No DOB',
-      };
-    }).toList();
-  }
-
-  Future<void> _deleteStudent(String studentId) async {
-    await FirebaseFirestore.instance.collection('students').doc(studentId).delete();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_className ?? 'Class Students'),
-      ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _fetchClassStudents(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final studentList = snapshot.data ?? [];
-          return ListView.builder(
-            itemCount: studentList.length,
-            itemBuilder: (context, index) {
-              final student = studentList[index];
-              return ListTile(
-                title: Text(student['name']),
-                subtitle: Text('DOB: ${student['dob']}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () async {
-                        final result = await Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => StudentForm(studentId: student['id'], classId: widget.classId),
-                        ));
-                        if (result == true) {
-                          setState(() {});
-                        }
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () async {
-                        await _deleteStudent(student['id']);
-                        setState(() {});
-                      },
-                    ),
-                  ],
+      appBar: AppBar(title: Text(_className ?? 'Class Students')),
+      body: ListView.builder(
+        itemCount: _students.length,
+        itemBuilder: (context, index) {
+          final student = _students[index];
+          return ListTile(
+            title: Text(student['name']),
+            subtitle: Text('DOB: ${student['dob']}'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () async {
+                    final result = await Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => StudentForm(studentId: student['id'], classId: widget.classId),
+                    ));
+                    if (result == true) {
+                      await _fetchData();
+                    }
+                  },
                 ),
-              );
-            },
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () async {
+                    await _studentService.deleteStudent(student['id']);
+                    await _fetchData();
+                  },
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -97,7 +76,7 @@ class _ClassStudentsScreenState extends State<ClassStudentsScreen> {
             builder: (context) => StudentForm(classId: widget.classId),
           ));
           if (result == true) {
-            setState(() {});
+            await _fetchData();
           }
         },
         child: const Icon(Icons.add),

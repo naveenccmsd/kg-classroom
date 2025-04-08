@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/class_service.dart';
 import '../services/student_service.dart';
 
 
@@ -15,6 +16,7 @@ class StudentForm extends StatefulWidget {
 class _StudentFormState extends State<StudentForm> {
   final _formKey = GlobalKey<FormState>();
   final _studentService = StudentService();
+  final _classService = ClassService();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -34,7 +36,7 @@ class _StudentFormState extends State<StudentForm> {
   }
 
   Future<void> _fetchClasses() async {
-    final classes = await _studentService.fetchClasses();
+    final classes = await _classService.fetchClasses();
     setState(() {
       _classes = classes;
     });

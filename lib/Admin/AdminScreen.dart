@@ -1,6 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
+import 'package:untitled/services/student_service.dart';
+import '../services/class_service.dart';
+import '../services/teacher_service.dart';
 import 'ClassForm.dart';
 import 'ClassStudentsScreen.dart';
 import 'TeacherForm.dart';
@@ -14,7 +15,9 @@ class AdminScreen extends StatefulWidget {
 }
 
 class _AdminScreenState extends State<AdminScreen> {
-
+  final _classService = ClassService();
+  final _studentService = StudentService();
+  final _teacherService = TeacherService();
   List<Map<String, dynamic>> _classes = [];
   final Map<String, dynamic> _staticClasses = {'id': "", 'name': 'Unassigned Students'};
   bool _isLoading = true;
@@ -26,37 +29,20 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _fetchClasses() async {
-    final query = await FirebaseFirestore.instance.collection('classes').get();
+    final classes = await _classService.fetchClasses();
     setState(() {
-      _classes = query.docs.asMap().entries.map((entry) {
-        final doc = entry.value;
-        final data = doc.data();
-        return {
-          'id': doc.id,
-          'name': data['name'] ?? 'No Name',
-          'order': data['order'] ?? entry.key, // Use the index as the default order
-        };
-      }).toList();
-      _classes.sort((a, b) => a['order'].compareTo(b['order'])); // Sort by order
-      // _classes.insert(0, {'id': null, 'name': 'Unassigned Students'});
+      _classes = classes..sort((a, b) => a['order'].compareTo(b['order']));
       _isLoading = false;
     });
-    print('Classes fetched: $_classes'); // Debug print
   }
 
   Future<void> _updateClassOrder() async {
-    for (int i = 0; i < _classes.length; i++) {
-      await FirebaseFirestore.instance.collection('classes').doc(_classes[i]['id']).update({'order': i });
-    }
+    await _classService.updateClassOrder(_classes);
   }
 
   Future<void> _deleteClass(String classId) async {
-    final studentQuery = await FirebaseFirestore.instance
-        .collection('students')
-        .where('classId', isEqualTo: classId)
-        .get();
-
-    final studentCount = studentQuery.docs.length;
+    final studentQuery = await _studentService.fetchClassStudents(classId);
+    final studentCount = studentQuery.length;
 
     if (studentCount > 0) {
       final confirm = await showDialog<bool>(
@@ -83,19 +69,15 @@ class _AdminScreenState extends State<AdminScreen> {
         return;
       }
 
-      // Remove classId for the students
-      for (final doc in studentQuery.docs) {
-        await FirebaseFirestore.instance.collection('students').doc(doc.id).update({'classId': null});
-      }
+      await _studentService.unassignStudentsFromClass(classId);
     }
 
-    // Delete the class
-    await FirebaseFirestore.instance.collection('classes').doc(classId).delete();
+    await _classService.deleteClass(classId);
     _fetchClasses();
   }
 
   Future<void> _deleteTeacher(String teacherId) async {
-    await FirebaseFirestore.instance.collection('teachers').doc(teacherId).delete();
+    await _teacherService.deleteTeacher(teacherId);
     setState(() {});
   }
 
@@ -125,7 +107,6 @@ class _AdminScreenState extends State<AdminScreen> {
             return FloatingActionButton(
               onPressed: () async {
                 if (tabController.index == 0) {
-                  // Add Teacher
                   final result = await Navigator.push(context, MaterialPageRoute(
                     builder: (context) => const TeacherForm(),
                   ));
@@ -133,7 +114,6 @@ class _AdminScreenState extends State<AdminScreen> {
                     setState(() {});
                   }
                 } else {
-                  // Add Class
                   final result = await Navigator.push(context, MaterialPageRoute(
                     builder: (context) => const ClassForm(),
                   ));
@@ -152,7 +132,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Widget _buildTeacherTab() {
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _fetchTeachers(),
+      future: _teacherService.fetchTeachers(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -199,20 +179,19 @@ class _AdminScreenState extends State<AdminScreen> {
     return ReorderableListView(
       onReorder: (oldIndex, newIndex) {
         if (oldIndex == 0 || newIndex == 0 || oldIndex == newIndex) {
-          return; // Prevent reordering the first item or if there is no change in order
+          return;
         }
         setState(() {
           if (newIndex > oldIndex) {
             newIndex -= 1;
           }
-          final classData = _classes.removeAt(oldIndex-1);
-          _classes.insert(newIndex-1, classData);
-          // Update the order field in _classes
+          final classData = _classes.removeAt(oldIndex - 1);
+          _classes.insert(newIndex - 1, classData);
           for (int i = 0; i < _classes.length; i++) {
             _classes[i]['order'] = i;
           }
         });
-        _updateClassOrder(); // Call the function outside of setState
+        _updateClassOrder();
       },
       children: [
         buildUIClasses(_staticClasses),
@@ -225,46 +204,34 @@ class _AdminScreenState extends State<AdminScreen> {
     final bool hasValidId = classData['id'] != null && classData['id'].isNotEmpty;
 
     return ListTile(
-          key: ValueKey(classData['id']),
-          title: Text(classData['name']),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if(hasValidId)
-                IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () async {
-                  final result = await Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => ClassForm(classData: classData),
-                  ));
-                  if (result == true) {
-                    _fetchClasses();
-                  }
-                },
-              ),
-              if(hasValidId)
-                IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () => _deleteClass(classData['id']),
-              ),
-            ],
-          ),
-          onTap: hasValidId
-              ? () => _showClassStudents(context, classData['id'])
-              : () => _showUnassignedStudents(context),
-        );
-      }
-
-  Future<List<Map<String, dynamic>>> _fetchTeachers() async {
-    final query = await FirebaseFirestore.instance.collection('teachers').get();
-    return query.docs.map((doc) {
-      final data = doc.data();
-      return {
-        'id': doc.id,
-        'name': data['name'] ?? 'No Name',
-        'email': data['email'] ?? 'No Email',
-      };
-    }).toList();
+      key: ValueKey(classData['id']),
+      title: Text(classData['name']),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasValidId)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () async {
+                final result = await Navigator.push(context, MaterialPageRoute(
+                  builder: (context) => ClassForm(classData: classData),
+                ));
+                if (result == true) {
+                  _fetchClasses();
+                }
+              },
+            ),
+          if (hasValidId)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () => _deleteClass(classData['id']),
+            ),
+        ],
+      ),
+      onTap: hasValidId
+          ? () => _showClassStudents(context, classData['id'])
+          : () => _showUnassignedStudents(context),
+    );
   }
 
   static void _showUnassignedStudents(BuildContext context) {
