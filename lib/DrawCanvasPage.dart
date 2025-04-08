@@ -36,10 +36,11 @@ class _DrawCanvasPageState extends State<DrawCanvasPage> {
             scrollDirection: Axis.vertical,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Stack(
-                children: [
-                  Center(
-                    child: Image.network(
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center, // Add this line
+                  children: [
+                    Image.network(
                       widget.imageUrl,
                       key: _imageKey,
                       fit: BoxFit.contain,
@@ -60,38 +61,38 @@ class _DrawCanvasPageState extends State<DrawCanvasPage> {
                         }
                       },
                     ),
-                  ),
-                  if (imageWidth > 0 && imageHeight > 0)
-                    GestureDetector(
-                      onPanUpdate: (details) {
-                        setState(() {
-                          final renderBox = _imageKey.currentContext?.findRenderObject() as RenderBox?;
-                          if (renderBox != null) {
-                            final localPosition = renderBox.globalToLocal(details.globalPosition);
-                            if (localPosition.dx >= 0 &&
-                                localPosition.dy >= 0 &&
-                                localPosition.dx <= imageWidth &&
-                                localPosition.dy <= imageHeight) {
-                              points.add(Offset(
-                                localPosition.dx / imageWidth,
-                                localPosition.dy / imageHeight,
-                              ));
+                    if (imageWidth > 0 && imageHeight > 0)
+                      GestureDetector(
+                        onPanUpdate: (details) {
+                          setState(() {
+                            final renderBox = _imageKey.currentContext?.findRenderObject() as RenderBox?;
+                            if (renderBox != null) {
+                              final localPosition = renderBox.globalToLocal(details.globalPosition);
+                              if (localPosition.dx >= 0 &&
+                                  localPosition.dy >= 0 &&
+                                  localPosition.dx <= imageWidth &&
+                                  localPosition.dy <= imageHeight) {
+                                points.add(Offset(
+                                  localPosition.dx / imageWidth,
+                                  localPosition.dy / imageHeight,
+                                ));
+                              }
                             }
-                          }
-                        });
-                      },
-                      onPanEnd: (details) {
-                        points.add(Offset.zero);
-                      },
-                      child: SizedBox(
-                        width: imageWidth,
-                        height: imageHeight,
-                        child: CustomPaint(
-                          painter: _DrawPainter(points: points, imageWidth: imageWidth, imageHeight: imageHeight),
+                          });
+                        },
+                        onPanEnd: (details) {
+                          points.add(Offset.zero);
+                        },
+                        child: SizedBox(
+                          width: imageWidth,
+                          height: imageHeight,
+                          child: CustomPaint(
+                            painter: _DrawPainter(points: points, imageWidth: imageWidth, imageHeight: imageHeight),
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
