@@ -1,6 +1,9 @@
+import 'package:untitled/services/role_service.dart';
+
 import 'firebase_service.dart';
 
 class StudentService extends FirebaseService {
+  final RoleService _roleService = RoleService();
 
 
   Future<List<Map<String, dynamic>>> fetchUnassignedStudents() async {
@@ -33,8 +36,15 @@ class StudentService extends FirebaseService {
   Future<void> assignStudentToClass(String studentId, String classId) async {
     await firestore.collection('students').doc(studentId).update({'classId': classId});
   }
+
   Future<void> deleteStudent(String studentId) async {
     await firestore.collection('students').doc(studentId).delete();
+    await _roleService.removeRole(studentId, 'student');
+  }
+
+  Future<void> updateStudent(String studentId, Map<String, dynamic> studentData) async {
+    await firestore.collection('students').doc(studentId).set(studentData);
+    await _roleService.addRole(studentId, 'student');
   }
 
   Future<Map<String, dynamic>?> fetchStudentData(String studentId) async {
@@ -44,13 +54,12 @@ class StudentService extends FirebaseService {
 
   Future<void> saveStudent(String? previousEmail, Map<String, dynamic> studentData) async {
     final email = studentData['email'];
-
     // Remove the previous email document if the email has changed
     if (previousEmail != null && previousEmail != email) {
-      await firestore.collection('students').doc(previousEmail).delete();
+      deleteStudent(previousEmail);
     }
+    updateStudent(email, studentData);
 
-    await firestore.collection('students').doc(email).set(studentData);
   }
 
   Future<bool> isEmailInUse(String email, String? previousEmail) async {

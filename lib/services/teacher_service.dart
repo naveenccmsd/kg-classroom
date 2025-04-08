@@ -1,6 +1,10 @@
+import 'package:untitled/services/role_service.dart';
+
 import 'firebase_service.dart';
 
 class TeacherService extends FirebaseService {
+  final RoleService _roleService = RoleService();
+
   Future<List<Map<String, dynamic>>> fetchTeachers() async {
     final query = await firestore.collection('teachers').get();
     return query.docs.map((doc) {
@@ -12,8 +16,14 @@ class TeacherService extends FirebaseService {
       };
     }).toList();
   }
+
   Future<void> deleteTeacher(String teacherId) async {
     await firestore.collection('teachers').doc(teacherId).delete();
+    await _roleService.removeRole(teacherId, 'teacher');
+  }
+  Future<void> updateTeacher(String teacherId, Map<String, dynamic> teacherData) async {
+    await firestore.collection('teachers').doc(teacherId).set(teacherData);
+    await _roleService.addRole(teacherId, 'teacher');
   }
 
   Future<void> saveTeacher(String? previousEmail, Map<String, dynamic> teacherData) async {
@@ -21,10 +31,9 @@ class TeacherService extends FirebaseService {
 
     // Remove the previous email document if the email has changed
     if (previousEmail != null && previousEmail != email) {
-      await firestore.collection('teachers').doc(previousEmail).delete();
+      deleteTeacher(previousEmail);
     }
-
-    await firestore.collection('teachers').doc(email).set(teacherData);
+    updateTeacher(email, teacherData);
   }
 
 
