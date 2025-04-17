@@ -25,6 +25,7 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
   List<String> _imageNames = [];
   List<Offset> _points = [];
   bool _isSaving = false;
+  String _selectedTool = 'Pen'; // Default tool
 
   @override
   void initState() {
@@ -64,7 +65,7 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
         setState(() {
           _imageNames = updatedSnapshot.docs.map((doc) => doc.id).toList();
         });
-      }else {
+      } else {
         setState(() {
           _imageNames = imagesSnapshot.docs.map((doc) => doc.id).toList();
         });
@@ -106,6 +107,44 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
     }
   }
 
+
+  Future<void> _clearImage() async {
+    try {
+      final teacherImageDoc = await FirebaseFirestore.instance
+          .collection('homeworks')
+          .doc(widget.homeworkId)
+          .collection('images')
+          .doc(_imageNames[_currentIndex])
+          .get();
+
+      if (teacherImageDoc.exists) {
+        final imageData = teacherImageDoc.data()?['data'];
+        if (imageData != null) {
+          final decodedData = base64Decode(imageData);
+          final ui.Codec codec = await ui.instantiateImageCodec(decodedData);
+          final ui.FrameInfo frame = await codec.getNextFrame();
+          setState(() {
+            _image = frame.image;
+            _isImageLoaded = true;
+            _points.clear(); // Clear any edits
+          });
+
+          // Replace the current image in the student's collection
+          await FirebaseFirestore.instance
+              .collection('students')
+              .doc(widget.studentEmail)
+              .collection('assignedHomeworks')
+              .doc(widget.homeworkId)
+              .collection('images')
+              .doc(_imageNames[_currentIndex])
+              .update({'data': imageData});
+        }
+      }
+    } catch (e) {
+      debugPrint('Error clearing image: $e');
+    }
+  }
+
   Future<void> _saveEdits(String imageName) async {
     try {
       setState(() {
@@ -118,8 +157,8 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
 
       final paint = Paint()
         ..color = Colors.blue
-        ..strokeWidth = 3.0
-        ..strokeCap = StrokeCap.round;
+        ..strokeWidth = _selectedTool == 'Pen' ? 3.0 : 8.0
+        ..strokeCap = _selectedTool == 'Pen' ? StrokeCap.round : StrokeCap.square;
 
       for (int i = 0; i < _points.length - 1; i++) {
         if (_points[i] != Offset.zero && _points[i + 1] != Offset.zero) {
@@ -159,11 +198,32 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
     });
     _fetchAndLoadImage(_imageNames[newIndex]);
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Homework Viewer')),
+      appBar: AppBar(
+        title: const Text('Homework Viewer'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) async {
+              if (value == 'Clear Canvas') {
+                setState(() {
+                  _points.clear();
+                });
+              } else if (value == 'Clear Image') {
+                await _clearImage();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'Clear Canvas', child: Text('Clear Canvas')),
+              const PopupMenuItem(value: 'Clear Image', child: Text('Clear Image')),
+              const PopupMenuItem(value: 'Pen', child: Text('Pen')),
+              const PopupMenuItem(value: 'Brush', child: Text('Brush')),
+            ],
+            icon: const Icon(Icons.more_vert),
+          ),
+        ],
+      ),
       body: Center(
         child: _isImageLoaded
             ? LayoutBuilder(
@@ -192,7 +252,7 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
                   width: _image.width.toDouble(),
                   height: _image.height.toDouble(),
                   child: CustomPaint(
-                    painter: ImagePainter(_image, _points),
+                    painter: ImagePainter(_image, _points, _selectedTool),
                   ),
                 ),
               ),
@@ -223,8 +283,9 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
 class ImagePainter extends CustomPainter {
   final ui.Image image;
   final List<Offset> points;
+  final String tool;
 
-  ImagePainter(this.image, this.points);
+  ImagePainter(this.image, this.points, this.tool);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -232,8 +293,8 @@ class ImagePainter extends CustomPainter {
 
     final paint = Paint()
       ..color = Colors.blue
-      ..strokeWidth = 3.0
-      ..strokeCap = StrokeCap.round;
+      ..strokeWidth = tool == 'Pen' ? 3.0 : 8.0
+      ..strokeCap = tool == 'Pen' ? StrokeCap.round : StrokeCap.square;
 
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != Offset.zero && points[i + 1] != Offset.zero) {
