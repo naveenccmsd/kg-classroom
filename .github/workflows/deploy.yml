@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Build and Deploy Web + APK
 
 on:
   push:
@@ -22,12 +22,25 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Build Web
       - name: Build web app
         run: flutter build web --base-href="/kg-classroom/" --release
 
+      # Build APK
+      - name: Build Android APK
+        run: flutter build apk --release
+
+      # Deploy web to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           publish_branch: gh-pages
           github_token: ${{ secrets.GH_PAGE_TOKEN }}
           publish_dir: build/web
+
+      # Upload APK as GitHub artifact
+      - name: Upload APK to GitHub as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kg-classroom-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
