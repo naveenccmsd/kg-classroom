@@ -23,7 +23,7 @@ jobs:
         run: flutter pub get
 
       - name: Build web app
-        run: flutter build web --base-href="/"
+        run: flutter build web --base-href="/kg-classroom/" --release
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
