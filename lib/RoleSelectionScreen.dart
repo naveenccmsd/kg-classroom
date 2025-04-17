@@ -13,7 +13,7 @@ class RoleSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final studentName = user?.email ?? 'Unknown';
+    final studentEmail = user?.email ?? 'Unknown';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Select Role')),
@@ -37,7 +37,7 @@ class RoleSelectionScreen extends StatelessWidget {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const TeacherDashboard(),
+                  builder: (context) => TeacherDashboard(),
                 ),
               );
             });
@@ -46,7 +46,7 @@ class RoleSelectionScreen extends StatelessWidget {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => StudentDashboard(studentName: studentName),
+                  builder: (context) => StudentDashboard(studentEmail: studentEmail),
                 ),
               );
             });
@@ -59,7 +59,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => const TeacherDashboard(),
+                      builder: (context) => TeacherDashboard(),
                     ));
                   },
                   child: const Text('I am a Teacher'),
@@ -68,7 +68,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => StudentDashboard(studentName: studentName),
+                      builder: (context) => StudentDashboard(studentEmail: studentEmail),
                     ));
                   },
                   child: const Text('I am a Student'),

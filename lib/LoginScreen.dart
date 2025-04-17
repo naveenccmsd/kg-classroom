@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController(text: 'admin@test.com');
+  final TextEditingController _emailController = TextEditingController(text: 'test@test.com1');
   final TextEditingController _passwordController = TextEditingController(text: 'Password@123');
   final RoleService _roleService = RoleService();
   bool _isLogin = true;

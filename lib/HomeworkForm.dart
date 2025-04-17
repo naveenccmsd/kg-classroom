@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 
 class HomeworkForm extends StatefulWidget {
@@ -12,33 +12,17 @@ class HomeworkForm extends StatefulWidget {
 
 class _HomeworkFormState extends State<HomeworkForm> {
   final _formKey = GlobalKey<FormState>();
-  late String _title;
-  late String _description;
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final List<String> _images = [];
 
   @override
   void initState() {
     super.initState();
-    _title = widget.homework?['title'] ?? '';
-    _description = widget.homework?['description'] ?? '';
-  }
-
-  Future<void> _saveHomework() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      final data = {
-        'title': _title,
-        'description': _description,
-        'createdAt': Timestamp.now(),
-      };
-      if (widget.homework == null) {
-        await FirebaseFirestore.instance.collection('homeworks').add(data);
-      } else {
-        await FirebaseFirestore.instance
-            .collection('homeworks')
-            .doc(widget.homework!['id'])
-            .update(data);
-      }
-      Navigator.pop(context, true);
+    if (widget.homework != null) {
+      _titleController.text = widget.homework!['title'] ?? '';
+      _descriptionController.text = widget.homework!['description'] ?? '';
+      _images.addAll(List<String>.from(widget.homework!['images'] ?? []));
     }
   }
 
@@ -53,7 +37,7 @@ class _HomeworkFormState extends State<HomeworkForm> {
           child: Column(
             children: [
               TextFormField(
-                initialValue: _title,
+                controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Title'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -61,12 +45,9 @@ class _HomeworkFormState extends State<HomeworkForm> {
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _title = value!;
-                },
               ),
               TextFormField(
-                initialValue: _description,
+                controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Description'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -74,13 +55,14 @@ class _HomeworkFormState extends State<HomeworkForm> {
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _description = value!;
-                },
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _saveHomework,
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    Navigator.pop(context, true);
+                  }
+                },
                 child: const Text('Save'),
               ),
             ],
