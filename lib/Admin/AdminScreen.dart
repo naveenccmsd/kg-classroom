@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:untitled/services/student_service.dart';
+import 'package:kg_classroom/services/student_service.dart';
 import '../services/class_service.dart';
 import '../services/teacher_service.dart';
 import 'ClassForm.dart';

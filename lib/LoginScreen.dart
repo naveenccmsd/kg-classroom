@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:untitled/services/role_service.dart';
-
+import 'package:kg_classroom/services/role_service.dart';
 import 'RoleSelectionScreen.dart';
 import 'Admin/AdminScreen.dart';
 
