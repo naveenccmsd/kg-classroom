@@ -63,11 +63,11 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
         // Re-fetch the student images after copying
         final updatedSnapshot = await studentImagesCollection.get();
         setState(() {
-          _imageNames = updatedSnapshot.docs.map((doc) => doc.id).toList();
+          _imageNames = _sortImageNamesByNumber(updatedSnapshot.docs.map((doc) => doc.id).toList());
         });
       } else {
         setState(() {
-          _imageNames = imagesSnapshot.docs.map((doc) => doc.id).toList();
+          _imageNames = _sortImageNamesByNumber(imagesSnapshot.docs.map((doc) => doc.id).toList());
         });
       }
 
@@ -77,6 +77,15 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
     } catch (e) {
       debugPrint('Error fetching image names: $e');
     }
+  }
+  List<String> _sortImageNamesByNumber(List<String> imageNames) {
+    final regex = RegExp(r'\d+'); // Regular expression to extract numbers
+    imageNames.sort((a, b) {
+      final aNumber = int.tryParse(regex.firstMatch(a)?.group(0) ?? '0') ?? 0;
+      final bNumber = int.tryParse(regex.firstMatch(b)?.group(0) ?? '0') ?? 0;
+      return aNumber.compareTo(bNumber);
+    });
+    return imageNames;
   }
 
   Future<void> _fetchAndLoadImage(String imageName) async {

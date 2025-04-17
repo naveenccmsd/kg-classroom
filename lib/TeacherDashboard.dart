@@ -113,9 +113,97 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   }
 
   void _createOrEditHomework({Map<String, dynamic>? homework}) {
-    // Implement homework creation or editing logic
-  }
+    final titleController = TextEditingController(text: homework?['title'] ?? '');
+    final descriptionController = TextEditingController(text: homework?['description'] ?? '');
+    final imagesController = TextEditingController(text: (homework?['images'] ?? []).join(', '));
 
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(homework == null ? 'Create Homework' : 'Edit Homework'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                ),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLines: 3,
+                ),
+                TextField(
+                  controller: imagesController,
+                  decoration: const InputDecoration(labelText: 'Images (comma-separated URLs)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final title = titleController.text.trim();
+                final description = descriptionController.text.trim();
+                final images = imagesController.text.split(',').map((e) => e.trim()).toList();
+
+                if (title.isEmpty || description.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Title and description are required.')),
+                  );
+                  return;
+                }
+
+                try {
+                  if (homework == null) {
+                    // Create new homework with title as document ID
+                    await FirebaseFirestore.instance
+                        .collection('homeworks')
+                        .doc(title) // Use title as document ID
+                        .set({
+                      'title': title,
+                      'description': description,
+                      'images': images,
+                      'createdAt': FieldValue.serverTimestamp(),
+                    });
+                  } else {
+                    // Update existing homework
+                    await FirebaseFirestore.instance
+                        .collection('homeworks')
+                        .doc(homework['id'])
+                        .update({
+                      'description': description,
+                      'images': images,
+                    });
+                  }
+
+                  setState(() {
+                    _homeworkList = _fetchHomeworkList();
+                  });
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(homework == null ? 'Homework created!' : 'Homework updated!')),
+                  );
+                } catch (e) {
+                  debugPrint('Error saving homework: $e');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Failed to save homework.')),
+                  );
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,6 +242,52 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                     IconButton(
                       icon: const Icon(Icons.assignment),
                       onPressed: () => _assignHomework(hw),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text('Delete Homework'),
+                              content: const Text('Are you sure you want to delete this homework?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+
+                        if (confirm == true) {
+                          try {
+                            await FirebaseFirestore.instance
+                                .collection('homeworks')
+                                .doc(hw['id'])
+                                .delete();
+
+                            setState(() {
+                              _homeworkList = _fetchHomeworkList();
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Homework deleted successfully!')),
+                            );
+                          } catch (e) {
+                            debugPrint('Error deleting homework: $e');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Failed to delete homework.')),
+                            );
+                          }
+                        }
+                      },
                     ),
                   ],
                 ),
