@@ -32,9 +32,9 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
     super.initState();
     _fetchImageNames();
   }
-
   Future<void> _fetchImageNames() async {
     try {
+      debugPrint('Fetching image names...');
       final studentImagesCollection = FirebaseFirestore.instance
           .collection('students')
           .doc(widget.studentEmail)
@@ -43,7 +43,10 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
           .collection('images');
 
       final imagesSnapshot = await studentImagesCollection.get();
+      debugPrint('Student images snapshot retrieved: ${imagesSnapshot.docs.length} documents found.');
       if (imagesSnapshot.docs.isEmpty) {
+        debugPrint('copy started  teacher images to student collection.');
+
         // Fetch images from the teacher's original homework collection
         final teacherImagesCollection = FirebaseFirestore.instance
             .collection('homeworks')
@@ -59,17 +62,22 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
             'data': data['data'],
           });
         }
-
+        debugPrint('Copied teacher images to student collection.');
         // Re-fetch the student images after copying
         final updatedSnapshot = await studentImagesCollection.get();
         setState(() {
-          _imageNames = _sortImageNamesByNumber(updatedSnapshot.docs.map((doc) => doc.id).toList());
+          _imageNames = _sortImageNamesByNumber(
+              updatedSnapshot.docs.map((doc) => doc['name'] as String).toList().cast<String>()
+          );
         });
       } else {
         setState(() {
-          _imageNames = _sortImageNamesByNumber(imagesSnapshot.docs.map((doc) => doc.id).toList());
+          _imageNames = _sortImageNamesByNumber(
+              imagesSnapshot.docs.map((doc) => doc['name'] as String).toList().cast<String>()
+          );
         });
       }
+      debugPrint('Image names sorted: $_imageNames');
 
       if (_imageNames.isNotEmpty) {
         _fetchAndLoadImage(_imageNames[_currentIndex]);
@@ -79,7 +87,7 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
     }
   }
   List<String> _sortImageNamesByNumber(List<String> imageNames) {
-    final regex = RegExp(r'\d+'); // Regular expression to extract numbers
+    final regex = RegExp(r'\d+'); // Extract numbers
     imageNames.sort((a, b) {
       final aNumber = int.tryParse(regex.firstMatch(a)?.group(0) ?? '0') ?? 0;
       final bNumber = int.tryParse(regex.firstMatch(b)?.group(0) ?? '0') ?? 0;
@@ -88,34 +96,46 @@ class _HomeworkViewerState extends State<HomeworkViewer> {
     return imageNames;
   }
 
+
   Future<void> _fetchAndLoadImage(String imageName) async {
     try {
+      debugPrint('Fetching and loading image: $imageName');
+
       final imageDoc = await FirebaseFirestore.instance
           .collection('students')
           .doc(widget.studentEmail)
           .collection('assignedHomeworks')
           .doc(widget.homeworkId)
           .collection('images')
-          .doc(imageName)
+          .where('name', isEqualTo: imageName)
           .get();
+      debugPrint('Number of documents fetched: ${imageDoc.docs.length}');
 
-      if (imageDoc.exists) {
-        final imageData = imageDoc.data()?['data'];
+      if (imageDoc.docs.isNotEmpty) {
+        final imageData = imageDoc.docs.first.data()['data'];
+        debugPrint('Image data retrieved: ${imageData != null ? "Yes" : "No"}');
+
         if (imageData != null) {
           final decodedData = base64Decode(imageData);
           final ui.Codec codec = await ui.instantiateImageCodec(decodedData);
           final ui.FrameInfo frame = await codec.getNextFrame();
+          debugPrint('Image frame created: ${frame.image.width}x${frame.image.height}');
+
           setState(() {
             _image = frame.image;
             _isImageLoaded = true;
+            debugPrint('State updated: _isImageLoaded=$_isImageLoaded');
+
           });
+          debugPrint('Image loaded successfully: ${_image.width}x${_image.height}');
+        }else {
+          debugPrint('No documents found for the given image name.');
         }
       }
     } catch (e) {
       debugPrint('Error fetching or loading image: $e');
     }
   }
-
 
   Future<void> _clearImage() async {
     try {
